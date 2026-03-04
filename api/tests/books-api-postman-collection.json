@@ -1,0 +1,1565 @@
+{
+  "info": {
+    "name": "Books API — Test Suite",
+    "description": "31 automated test cases for the Books Catalog API.\nRun with Collection Runner (Postman) or Newman CLI:\n  npx newman run books-api-postman-collection.json",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "createdBookId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "TC001 | Health check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "health"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"TC001 | Status is 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"TC001 | JSON schema is valid\", function () {",
+                  "  var schema = {\"type\":\"object\",\"required\":[\"status\",\"uptime\"],\"properties\":{\"status\":{\"type\":\"string\",\"enum\":[\"ok\"]},\"uptime\":{\"type\":\"number\"}}};",
+                  "  pm.expect(tv4.validate(pm.response.json(), schema)).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test(\"TC001 | status field equals 'ok'\", function () {",
+                  "  pm.expect(pm.response.json().status).to.eql(\"ok\");",
+                  "});",
+                  "",
+                  "pm.test(\"TC001 | uptime is a positive number\", function () {",
+                  "  pm.expect(pm.response.json().uptime).to.be.above(0);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "GET /api/books",
+      "item": [
+        {
+          "name": "TC002 | Get all books",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/books",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "books"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"TC002 | Status is 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"TC002 | JSON schema is valid\", function () {",
+                  "  var schema = {\"type\":\"object\",\"required\":[\"total\",\"data\"],\"properties\":{\"total\":{\"type\":\"integer\",\"minimum\":0},\"data\":{\"type\":\"array\",\"items\":{\"type\":\"object\",\"required\":[\"id\",\"title\",\"author\",\"genre\"],\"properties\":{\"id\":{\"type\":\"integer\"},\"title\":{\"type\":\"string\"},\"author\":{\"type\":\"string\"},\"genre\":{\"type\":\"string\"},\"year\":{\"type\":\"integer\"},\"rating\":{\"type\":\"number\"}}}}}};",
+                  "  pm.expect(tv4.validate(pm.response.json(), schema)).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test(\"TC002 | total equals 5 (seed data)\", function () {",
+                  "  pm.expect(pm.response.json().total).to.eql(5);",
+                  "});",
+                  "",
+                  "pm.test(\"TC002 | data is a non-empty array\", function () {",
+                  "  pm.expect(pm.response.json().data).to.be.an(\"array\").that.is.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "TC003 | Filter by genre=technology",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/books?genre=technology",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "books"
+              ],
+              "query": [
+                {
+                  "key": "genre",
+                  "value": "technology"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"TC003 | Status is 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"TC003 | JSON schema is valid\", function () {",
+                  "  var schema = {\"type\":\"object\",\"required\":[\"total\",\"data\"],\"properties\":{\"total\":{\"type\":\"integer\",\"minimum\":0},\"data\":{\"type\":\"array\",\"items\":{\"type\":\"object\",\"required\":[\"id\",\"title\",\"author\",\"genre\"],\"properties\":{\"id\":{\"type\":\"integer\"},\"title\":{\"type\":\"string\"},\"author\":{\"type\":\"string\"},\"genre\":{\"type\":\"string\"},\"year\":{\"type\":\"integer\"},\"rating\":{\"type\":\"number\"}}}}}};",
+                  "  pm.expect(tv4.validate(pm.response.json(), schema)).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test(\"TC003 | every result has genre=technology\", function () {",
+                  "  pm.response.json().data.forEach(function (b) {",
+                  "    pm.expect(b.genre).to.eql(\"technology\");",
+                  "  });",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "TC004 | Filter by author=frank (partial, case-insensitive)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/books?author=frank",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "books"
+              ],
+              "query": [
+                {
+                  "key": "author",
+                  "value": "frank"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"TC004 | Status is 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"TC004 | JSON schema is valid\", function () {",
+                  "  var schema = {\"type\":\"object\",\"required\":[\"total\",\"data\"],\"properties\":{\"total\":{\"type\":\"integer\",\"minimum\":0},\"data\":{\"type\":\"array\",\"items\":{\"type\":\"object\",\"required\":[\"id\",\"title\",\"author\",\"genre\"],\"properties\":{\"id\":{\"type\":\"integer\"},\"title\":{\"type\":\"string\"},\"author\":{\"type\":\"string\"},\"genre\":{\"type\":\"string\"},\"year\":{\"type\":\"integer\"},\"rating\":{\"type\":\"number\"}}}}}};",
+                  "  pm.expect(tv4.validate(pm.response.json(), schema)).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test(\"TC004 | result contains Dune\", function () {",
+                  "  var titles = pm.response.json().data.map(function (b) { return b.title; });",
+                  "  pm.expect(titles).to.include(\"Dune\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "TC005 | Filter by year=1965",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/books?year=1965",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "books"
+              ],
+              "query": [
+                {
+                  "key": "year",
+                  "value": "1965"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"TC005 | Status is 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"TC005 | JSON schema is valid\", function () {",
+                  "  var schema = {\"type\":\"object\",\"required\":[\"total\",\"data\"],\"properties\":{\"total\":{\"type\":\"integer\",\"minimum\":0},\"data\":{\"type\":\"array\",\"items\":{\"type\":\"object\",\"required\":[\"id\",\"title\",\"author\",\"genre\"],\"properties\":{\"id\":{\"type\":\"integer\"},\"title\":{\"type\":\"string\"},\"author\":{\"type\":\"string\"},\"genre\":{\"type\":\"string\"},\"year\":{\"type\":\"integer\"},\"rating\":{\"type\":\"number\"}}}}}};",
+                  "  pm.expect(tv4.validate(pm.response.json(), schema)).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test(\"TC005 | total equals 1\", function () {",
+                  "  pm.expect(pm.response.json().total).to.eql(1);",
+                  "});",
+                  "",
+                  "pm.test(\"TC005 | book year is 1965\", function () {",
+                  "  pm.expect(pm.response.json().data[0].year).to.eql(1965);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "TC015 | [Negative] Filter by unknown genre",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/books?genre=unknown",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "books"
+              ],
+              "query": [
+                {
+                  "key": "genre",
+                  "value": "unknown"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"TC015 | Status is 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"TC015 | JSON schema is valid\", function () {",
+                  "  var schema = {\"type\":\"object\",\"required\":[\"total\",\"data\"],\"properties\":{\"total\":{\"type\":\"integer\",\"minimum\":0},\"data\":{\"type\":\"array\",\"items\":{\"type\":\"object\",\"required\":[\"id\",\"title\",\"author\",\"genre\"],\"properties\":{\"id\":{\"type\":\"integer\"},\"title\":{\"type\":\"string\"},\"author\":{\"type\":\"string\"},\"genre\":{\"type\":\"string\"},\"year\":{\"type\":\"integer\"},\"rating\":{\"type\":\"number\"}}}}}};",
+                  "  pm.expect(tv4.validate(pm.response.json(), schema)).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test(\"TC015 | total equals 0\", function () {",
+                  "  pm.expect(pm.response.json().total).to.eql(0);",
+                  "});",
+                  "",
+                  "pm.test(\"TC015 | data is an empty array\", function () {",
+                  "  pm.expect(pm.response.json().data).to.be.an(\"array\").that.is.empty;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "GET /api/books/:id",
+      "item": [
+        {
+          "name": "TC006 | Get existing book (id=1)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/books/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "books",
+                "1"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"TC006 | Status is 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"TC006 | JSON schema is valid\", function () {",
+                  "  var schema = {\"type\":\"object\",\"required\":[\"id\",\"title\",\"author\",\"genre\"],\"properties\":{\"id\":{\"type\":\"integer\"},\"title\":{\"type\":\"string\"},\"author\":{\"type\":\"string\"},\"genre\":{\"type\":\"string\"},\"year\":{\"type\":\"integer\"},\"rating\":{\"type\":\"number\"}}};",
+                  "  pm.expect(tv4.validate(pm.response.json(), schema)).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test(\"TC006 | returned id equals 1\", function () {",
+                  "  pm.expect(pm.response.json().id).to.eql(1);",
+                  "});",
+                  "",
+                  "pm.test(\"TC006 | title is non-empty string\", function () {",
+                  "  pm.expect(pm.response.json().title).to.be.a(\"string\").and.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "TC013 | [Negative] Get non-existing book (id=999)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/books/999",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "books",
+                "999"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"TC013 | Status is 404\", function () {",
+                  "  pm.response.to.have.status(404);",
+                  "});",
+                  "",
+                  "pm.test(\"TC013 | JSON schema is valid\", function () {",
+                  "  var schema = {\"type\":\"object\",\"required\":[\"error\"],\"properties\":{\"error\":{\"type\":\"string\"}}};",
+                  "  pm.expect(tv4.validate(pm.response.json(), schema)).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test(\"TC013 | error message mentions id 999\", function () {",
+                  "  pm.expect(pm.response.json().error).to.include(\"999\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "TC014 | [Negative] Get book with invalid id (abc)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/books/abc",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "books",
+                "abc"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"TC014 | Status is 400\", function () {",
+                  "  pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test(\"TC014 | JSON schema is valid\", function () {",
+                  "  var schema = {\"type\":\"object\",\"required\":[\"error\"],\"properties\":{\"error\":{\"type\":\"string\"}}};",
+                  "  pm.expect(tv4.validate(pm.response.json(), schema)).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test(\"TC014 | error mentions 'integer'\", function () {",
+                  "  pm.expect(pm.response.json().error).to.include(\"integer\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "POST /api/books",
+      "item": [
+        {
+          "name": "TC007 | Create book with all fields",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/books",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "books"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"The Hobbit\",\n  \"author\": \"J.R.R. Tolkien\",\n  \"genre\": \"fantasy\",\n  \"year\": 1937,\n  \"rating\": 5\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"TC007 | Status is 201\", function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test(\"TC007 | JSON schema is valid\", function () {",
+                  "  var schema = {\"type\":\"object\",\"required\":[\"id\",\"title\",\"author\",\"genre\"],\"properties\":{\"id\":{\"type\":\"integer\"},\"title\":{\"type\":\"string\"},\"author\":{\"type\":\"string\"},\"genre\":{\"type\":\"string\"},\"year\":{\"type\":\"integer\"},\"rating\":{\"type\":\"number\"}}};",
+                  "  pm.expect(tv4.validate(pm.response.json(), schema)).to.be.true;",
+                  "});",
+                  "",
+                  "// Save id so TC012 (DELETE) can use it",
+                  "pm.collectionVariables.set(\"createdBookId\", pm.response.json().id);",
+                  "",
+                  "pm.test(\"TC007 | title matches request\", function () {",
+                  "  pm.expect(pm.response.json().title).to.eql(\"The Hobbit\");",
+                  "});",
+                  "",
+                  "pm.test(\"TC007 | id is an integer\", function () {",
+                  "  pm.expect(pm.response.json().id).to.be.a(\"number\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "TC008 | Create book with required fields only",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/books",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "books"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"My Test Book\",\n  \"author\": \"Jane Doe\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"TC008 | Status is 201\", function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test(\"TC008 | JSON schema is valid\", function () {",
+                  "  var schema = {\"type\":\"object\",\"required\":[\"id\",\"title\",\"author\",\"genre\"],\"properties\":{\"id\":{\"type\":\"integer\"},\"title\":{\"type\":\"string\"},\"author\":{\"type\":\"string\"},\"genre\":{\"type\":\"string\"},\"year\":{\"type\":\"integer\"},\"rating\":{\"type\":\"number\"}}};",
+                  "  pm.expect(tv4.validate(pm.response.json(), schema)).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test(\"TC008 | genre defaults to 'other'\", function () {",
+                  "  pm.expect(pm.response.json().genre).to.eql(\"other\");",
+                  "});",
+                  "",
+                  "pm.test(\"TC008 | id is assigned\", function () {",
+                  "  pm.expect(pm.response.json().id).to.be.a(\"number\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "TC016 | [Negative] Create without title",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/books",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "books"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"author\": \"Jane Doe\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"TC016 | Status is 400\", function () {",
+                  "  pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test(\"TC016 | JSON schema is valid\", function () {",
+                  "  var schema = {\"type\":\"object\",\"required\":[\"error\",\"details\"],\"properties\":{\"error\":{\"type\":\"string\"},\"details\":{\"type\":\"array\",\"items\":{\"type\":\"string\"}}}};",
+                  "  pm.expect(tv4.validate(pm.response.json(), schema)).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test(\"TC016 | details mentions 'title'\", function () {",
+                  "  var joined = pm.response.json().details.join(\" \");",
+                  "  pm.expect(joined).to.include(\"title\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "TC017 | [Negative] Create without author",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/books",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "books"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"No Author\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"TC017 | Status is 400\", function () {",
+                  "  pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test(\"TC017 | JSON schema is valid\", function () {",
+                  "  var schema = {\"type\":\"object\",\"required\":[\"error\",\"details\"],\"properties\":{\"error\":{\"type\":\"string\"},\"details\":{\"type\":\"array\",\"items\":{\"type\":\"string\"}}}};",
+                  "  pm.expect(tv4.validate(pm.response.json(), schema)).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test(\"TC017 | details mentions 'author'\", function () {",
+                  "  var joined = pm.response.json().details.join(\" \");",
+                  "  pm.expect(joined).to.include(\"author\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "TC018 | [Negative] Create with blank title",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/books",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "books"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"   \",\n  \"author\": \"Jane Doe\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"TC018 | Status is 400\", function () {",
+                  "  pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test(\"TC018 | JSON schema is valid\", function () {",
+                  "  var schema = {\"type\":\"object\",\"required\":[\"error\",\"details\"],\"properties\":{\"error\":{\"type\":\"string\"},\"details\":{\"type\":\"array\",\"items\":{\"type\":\"string\"}}}};",
+                  "  pm.expect(tv4.validate(pm.response.json(), schema)).to.be.true;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "TC019 | [Negative] Create with invalid genre",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/books",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "books"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"X\",\n  \"author\": \"Y\",\n  \"genre\": \"comics\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"TC019 | Status is 400\", function () {",
+                  "  pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test(\"TC019 | JSON schema is valid\", function () {",
+                  "  var schema = {\"type\":\"object\",\"required\":[\"error\",\"details\"],\"properties\":{\"error\":{\"type\":\"string\"},\"details\":{\"type\":\"array\",\"items\":{\"type\":\"string\"}}}};",
+                  "  pm.expect(tv4.validate(pm.response.json(), schema)).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test(\"TC019 | details mentions 'genre'\", function () {",
+                  "  var joined = pm.response.json().details.join(\" \");",
+                  "  pm.expect(joined).to.include(\"genre\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "TC020 | [Negative] Create with rating > 5",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/books",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "books"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"X\",\n  \"author\": \"Y\",\n  \"rating\": 10\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"TC020 | Status is 400\", function () {",
+                  "  pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test(\"TC020 | JSON schema is valid\", function () {",
+                  "  var schema = {\"type\":\"object\",\"required\":[\"error\",\"details\"],\"properties\":{\"error\":{\"type\":\"string\"},\"details\":{\"type\":\"array\",\"items\":{\"type\":\"string\"}}}};",
+                  "  pm.expect(tv4.validate(pm.response.json(), schema)).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test(\"TC020 | details mentions 'rating'\", function () {",
+                  "  var joined = pm.response.json().details.join(\" \");",
+                  "  pm.expect(joined).to.include(\"rating\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "TC021 | [Negative] Create with future year (2099)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/books",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "books"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"X\",\n  \"author\": \"Y\",\n  \"year\": 2099\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"TC021 | Status is 400\", function () {",
+                  "  pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test(\"TC021 | JSON schema is valid\", function () {",
+                  "  var schema = {\"type\":\"object\",\"required\":[\"error\",\"details\"],\"properties\":{\"error\":{\"type\":\"string\"},\"details\":{\"type\":\"array\",\"items\":{\"type\":\"string\"}}}};",
+                  "  pm.expect(tv4.validate(pm.response.json(), schema)).to.be.true;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "TC022 | [Negative] Create with empty body",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/books",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "books"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"TC022 | Status is 400\", function () {",
+                  "  pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test(\"TC022 | JSON schema is valid\", function () {",
+                  "  var schema = {\"type\":\"object\",\"required\":[\"error\",\"details\"],\"properties\":{\"error\":{\"type\":\"string\"},\"details\":{\"type\":\"array\",\"items\":{\"type\":\"string\"}}}};",
+                  "  pm.expect(tv4.validate(pm.response.json(), schema)).to.be.true;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "PUT /api/books/:id",
+      "item": [
+        {
+          "name": "TC009 | Full replace of book (id=1)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/books/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "books",
+                "1"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Clean Architecture\",\n  \"author\": \"Robert C. Martin\",\n  \"genre\": \"technology\",\n  \"year\": 2017,\n  \"rating\": 5\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"TC009 | Status is 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"TC009 | JSON schema is valid\", function () {",
+                  "  var schema = {\"type\":\"object\",\"required\":[\"id\",\"title\",\"author\",\"genre\"],\"properties\":{\"id\":{\"type\":\"integer\"},\"title\":{\"type\":\"string\"},\"author\":{\"type\":\"string\"},\"genre\":{\"type\":\"string\"},\"year\":{\"type\":\"integer\"},\"rating\":{\"type\":\"number\"}}};",
+                  "  pm.expect(tv4.validate(pm.response.json(), schema)).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test(\"TC009 | id stays 1\", function () {",
+                  "  pm.expect(pm.response.json().id).to.eql(1);",
+                  "});",
+                  "",
+                  "pm.test(\"TC009 | title is updated\", function () {",
+                  "  pm.expect(pm.response.json().title).to.eql(\"Clean Architecture\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "TC023 | [Negative] Replace non-existing book (id=999)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/books/999",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "books",
+                "999"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"X\",\n  \"author\": \"Y\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"TC023 | Status is 404\", function () {",
+                  "  pm.response.to.have.status(404);",
+                  "});",
+                  "",
+                  "pm.test(\"TC023 | JSON schema is valid\", function () {",
+                  "  var schema = {\"type\":\"object\",\"required\":[\"error\"],\"properties\":{\"error\":{\"type\":\"string\"}}};",
+                  "  pm.expect(tv4.validate(pm.response.json(), schema)).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test(\"TC023 | error mentions id 999\", function () {",
+                  "  pm.expect(pm.response.json().error).to.include(\"999\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "TC024 | [Negative] Replace without required fields",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/books/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "books",
+                "1"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"genre\": \"classic\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"TC024 | Status is 400\", function () {",
+                  "  pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test(\"TC024 | JSON schema is valid\", function () {",
+                  "  var schema = {\"type\":\"object\",\"required\":[\"error\",\"details\"],\"properties\":{\"error\":{\"type\":\"string\"},\"details\":{\"type\":\"array\",\"items\":{\"type\":\"string\"}}}};",
+                  "  pm.expect(tv4.validate(pm.response.json(), schema)).to.be.true;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "TC025 | [Negative] Replace with invalid id (abc)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/books/abc",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "books",
+                "abc"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"X\",\n  \"author\": \"Y\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"TC025 | Status is 400\", function () {",
+                  "  pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test(\"TC025 | JSON schema is valid\", function () {",
+                  "  var schema = {\"type\":\"object\",\"required\":[\"error\"],\"properties\":{\"error\":{\"type\":\"string\"}}};",
+                  "  pm.expect(tv4.validate(pm.response.json(), schema)).to.be.true;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "PATCH /api/books/:id",
+      "item": [
+        {
+          "name": "TC010 | Update rating only (id=1)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/books/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "books",
+                "1"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rating\": 3\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"TC010 | Status is 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"TC010 | JSON schema is valid\", function () {",
+                  "  var schema = {\"type\":\"object\",\"required\":[\"id\",\"title\",\"author\",\"genre\"],\"properties\":{\"id\":{\"type\":\"integer\"},\"title\":{\"type\":\"string\"},\"author\":{\"type\":\"string\"},\"genre\":{\"type\":\"string\"},\"year\":{\"type\":\"integer\"},\"rating\":{\"type\":\"number\"}}};",
+                  "  pm.expect(tv4.validate(pm.response.json(), schema)).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test(\"TC010 | rating updated to 3\", function () {",
+                  "  pm.expect(pm.response.json().rating).to.eql(3);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "TC011 | Update genre only (id=1)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/books/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "books",
+                "1"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"genre\": \"fantasy\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"TC011 | Status is 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"TC011 | JSON schema is valid\", function () {",
+                  "  var schema = {\"type\":\"object\",\"required\":[\"id\",\"title\",\"author\",\"genre\"],\"properties\":{\"id\":{\"type\":\"integer\"},\"title\":{\"type\":\"string\"},\"author\":{\"type\":\"string\"},\"genre\":{\"type\":\"string\"},\"year\":{\"type\":\"integer\"},\"rating\":{\"type\":\"number\"}}};",
+                  "  pm.expect(tv4.validate(pm.response.json(), schema)).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test(\"TC011 | genre updated to fantasy\", function () {",
+                  "  pm.expect(pm.response.json().genre).to.eql(\"fantasy\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "TC026 | [Negative] Update non-existing book (id=999)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/books/999",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "books",
+                "999"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rating\": 3\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"TC026 | Status is 404\", function () {",
+                  "  pm.response.to.have.status(404);",
+                  "});",
+                  "",
+                  "pm.test(\"TC026 | JSON schema is valid\", function () {",
+                  "  var schema = {\"type\":\"object\",\"required\":[\"error\"],\"properties\":{\"error\":{\"type\":\"string\"}}};",
+                  "  pm.expect(tv4.validate(pm.response.json(), schema)).to.be.true;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "TC027 | [Negative] Update with empty body",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/books/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "books",
+                "1"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"TC027 | Status is 400\", function () {",
+                  "  pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test(\"TC027 | JSON schema is valid\", function () {",
+                  "  var schema = {\"type\":\"object\",\"required\":[\"error\"],\"properties\":{\"error\":{\"type\":\"string\"}}};",
+                  "  pm.expect(tv4.validate(pm.response.json(), schema)).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test(\"TC027 | error mentions 'empty'\", function () {",
+                  "  pm.expect(pm.response.json().error).to.include(\"empty\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "TC028 | [Negative] Update with invalid genre",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/books/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "books",
+                "1"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"genre\": \"comics\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"TC028 | Status is 400\", function () {",
+                  "  pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test(\"TC028 | JSON schema is valid\", function () {",
+                  "  var schema = {\"type\":\"object\",\"required\":[\"error\",\"details\"],\"properties\":{\"error\":{\"type\":\"string\"},\"details\":{\"type\":\"array\",\"items\":{\"type\":\"string\"}}}};",
+                  "  pm.expect(tv4.validate(pm.response.json(), schema)).to.be.true;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "DELETE /api/books/:id",
+      "item": [
+        {
+          "name": "TC012 | Delete book created in TC007",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/books/{{createdBookId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "books",
+                "{{createdBookId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"TC012 | Status is 204\", function () {",
+                  "  pm.response.to.have.status(204);",
+                  "});",
+                  "",
+                  "pm.test(\"TC012 | response body is empty (204 No Content)\", function () {",
+                  "  pm.expect(pm.response.text()).to.be.empty;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "TC029 | [Negative] Delete non-existing book (id=999)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/books/999",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "books",
+                "999"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"TC029 | Status is 404\", function () {",
+                  "  pm.response.to.have.status(404);",
+                  "});",
+                  "",
+                  "pm.test(\"TC029 | JSON schema is valid\", function () {",
+                  "  var schema = {\"type\":\"object\",\"required\":[\"error\"],\"properties\":{\"error\":{\"type\":\"string\"}}};",
+                  "  pm.expect(tv4.validate(pm.response.json(), schema)).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test(\"TC029 | error mentions id 999\", function () {",
+                  "  pm.expect(pm.response.json().error).to.include(\"999\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "TC030 | [Negative] Delete with invalid id (abc)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/books/abc",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "books",
+                "abc"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"TC030 | Status is 400\", function () {",
+                  "  pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test(\"TC030 | JSON schema is valid\", function () {",
+                  "  var schema = {\"type\":\"object\",\"required\":[\"error\"],\"properties\":{\"error\":{\"type\":\"string\"}}};",
+                  "  pm.expect(tv4.validate(pm.response.json(), schema)).to.be.true;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Unknown Routes",
+      "item": [
+        {
+          "name": "TC031 | [Negative] Call non-existing route",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/unknown",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "unknown"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"TC031 | Status is 404\", function () {",
+                  "  pm.response.to.have.status(404);",
+                  "});",
+                  "",
+                  "pm.test(\"TC031 | JSON schema is valid\", function () {",
+                  "  var schema = {\"type\":\"object\",\"required\":[\"error\"],\"properties\":{\"error\":{\"type\":\"string\"}}};",
+                  "  pm.expect(tv4.validate(pm.response.json(), schema)).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test(\"TC031 | error mentions 'not found'\", function () {",
+                  "  pm.expect(pm.response.json().error).to.include(\"not found\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
